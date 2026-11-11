@@ -33,41 +33,12 @@ function showAnalyzeResult(d) {
   result.replaceChildren();
   result.className = 'result';
 
-  addText(result, 'span', 'KEYWORD MATCH · NOT AI', 'tag');
   addText(result, 'p', d.company.name);
-
   const score = addText(result, 'div', `${d.score}%`, 'score');
   score.setAttribute('aria-label', `Match score: ${d.score} percent`);
   addText(result, 'strong', 'Skill match rate');
+  addText(result, 'p', 'Score = 75% required skill coverage + 25% preferred skill coverage. Matching is keyword-based.', 'small');
 
-  const progress = document.createElement('div');
-  progress.className = 'progress';
-  progress.setAttribute('role', 'progressbar');
-  progress.setAttribute('aria-valuemin', '0');
-  progress.setAttribute('aria-valuemax', '100');
-  progress.setAttribute('aria-valuenow', String(d.score));
-  const fill = document.createElement('span');
-  fill.style.width = `${d.score}%`;
-  progress.append(fill);
-  result.append(progress);
-
-  addText(result, 'p', `Required: ${d.matchedRequired.length}/${d.requiredTotal} · Preferred: ${d.matchedPreferred.length}/${d.preferredTotal}`);
-
-  addText(result, 'strong', 'Matched required skills');
-  addSkillTags(result, d.matchedRequired, 'None yet');
-  addText(result, 'strong', 'Missing required skills');
-  addSkillTags(result, d.missingRequired, 'None, you cover every required skill');
-  addText(result, 'strong', 'Preferred skills');
-  addSkillTags(result, d.matchedPreferred, 'No preferred skills matched yet');
-  if (d.missingPreferred.length) {
-    addText(result, 'strong', 'Missing preferred skills');
-    addSkillTags(result, d.missingPreferred);
-  }
-
-  addText(result, 'strong', 'Feedback');
-  for (const line of d.feedback) addText(result, 'p', line);
-
-  addText(result, 'p', 'Score = 75% required skill coverage + 25% preferred skill coverage. Matching is keyword-based. No file was analyzed and nothing was saved.', 'small');
   result.setAttribute('tabindex', '-1');
   result.focus({ preventScroll: true });
   result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
