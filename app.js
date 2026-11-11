@@ -6,7 +6,9 @@ const result = document.getElementById('result');
 const fileInput = document.getElementById('file');
 const dropZone = document.getElementById('drop');
 const fileError = document.getElementById('fileerror');
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const isUpload = page === 'upload';
+const maxFileSizeMB = isUpload ? 3 : 10;
+const maxFileSize = maxFileSizeMB * 1024 * 1024;
 let selectedFile = null;
 
 document.querySelectorAll('.nav a.active').forEach(link => {
@@ -19,8 +21,13 @@ function add(parent, tag, text) {
   parent.append(element);
 }
 
-function renderBox(title, lines) {
+function clearResult() {
   result.replaceChildren();
+  result.className = '';
+}
+
+function renderBox(title, lines) {
+  clearResult();
   result.className = 'result';
   add(result, 'strong', title);
 
@@ -33,19 +40,18 @@ function renderBox(title, lines) {
 }
 
 function chooseFile(file) {
-  if (!file) return;
-
   selectedFile = null;
-  result.replaceChildren();
-  result.className = '';
+  clearResult();
 
   const filename = document.getElementById('filename');
-  const valid = /\.(pdf|docx)$/i.test(file.name)
-    && file.size > 0
-    && file.size <= MAX_FILE_SIZE;
+  const allowedExtension = isUpload ? /\.pdf$/i : /\.(pdf|docx)$/i;
 
-  if (!valid) {
-    fileError.textContent = 'Choose a non-empty PDF or DOCX file up to 10 MB.';
+  if (!file || !allowedExtension.test(file.name)
+      || file.size === 0 || file.size > maxFileSize) {
+    const types = isUpload ? 'PDF' : 'PDF or DOCX';
+    fileError.textContent = file
+      ? `Choose a non-empty ${types} file up to ${maxFileSizeMB} MB.`
+      : '';
     filename.textContent = 'Choose your résumé';
     fileInput.value = '';
     return;
@@ -58,7 +64,9 @@ function chooseFile(file) {
 
 if (fileInput) {
   fileInput.addEventListener('change', () => chooseFile(fileInput.files[0]));
+}
 
+if (fileInput && dropZone) {
   ['dragenter', 'dragover'].forEach(type => {
     dropZone.addEventListener(type, event => {
       event.preventDefault();
@@ -74,54 +82,20 @@ if (fileInput) {
   });
 
   dropZone.addEventListener('drop', event => {
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
     fileInput.value = '';
-    chooseFile(event.dataTransfer.files[0]);
+    chooseFile(file);
   });
 }
 
-function openDemoDB() {
+function readFileBase64(file) {
   return new Promise((resolve, reject) => {
-    if (!('indexedDB' in window)) {
-      reject(new Error('IndexedDB unavailable'));
-      return;
-    }
-
-    const request = indexedDB.open('careerlink-demo-storage', 1);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains('submissions')) {
-        db.createObjectStore('submissions', {
-          keyPath: 'id',
-          autoIncrement: true
-        });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function storeSubmission(data) {
-  const db = await openDemoDB();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction('submissions', 'readwrite');
-    transaction.objectStore('submissions').add(data);
-
-    transaction.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-
-    transaction.onerror = () => {
-      db.close();
-      reject(transaction.error);
-    };
-
-    transaction.onabort = () => {
-      db.close();
-      reject(transaction.error || new Error('Storage failed'));
-    };
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = () => reject(new Error('Could not read the PDF.'));
+    reader.onabort = () => reject(new Error('Reading the PDF was canceled.'));
+    reader.readAsDataURL(file);
   });
 }
 
@@ -130,22 +104,31 @@ if (form) {
     event.preventDefault();
     if (!form.reportValidity()) return;
 
+    if (page === 'analyze') {
+      if (typeof window.renderKeywordMatch === 'function') {
+        window.renderKeywordMatch();
+      }
+      return;
+    }
+
+    if (page !== 'queue' && !isUpload) return;
+
     const companyInput = document.getElementById('company');
     const company = companyInput.value;
+    const companyLabel = companyInput.selectedOptions[0]?.textContent.trim() || company;
     const button = form.querySelector('button[type="submit"], button.primary');
+    if (button.disabled) return;
+
+    const originalLabel = button.textContent;
 
     if (page === 'queue') {
-      if (button.disabled) return;
-
       const name = document.getElementById('name').value.trim();
-      const companyLabel = companyInput.selectedOptions[0].textContent.trim();
 
       if (!name) {
         renderBox('Enter your name.', []);
         return;
       }
 
-      const originalLabel = button.textContent;
       button.disabled = true;
       button.textContent = 'Joining…';
 
@@ -173,44 +156,54 @@ if (form) {
         button.disabled = false;
         button.textContent = originalLabel;
       }
-    } else if (page === 'upload') {
-      if (!selectedFile) {
-        fileError.textContent = 'Choose a PDF or DOCX résumé first.';
-        return;
-      }
 
-      button.disabled = true;
-      button.textContent = 'Saving…';
+      return;
+    }
 
-      try {
-        await storeSubmission({
+    const file = selectedFile;
+    if (!file) {
+      fileError.textContent = 'Choose a PDF résumé first.';
+      return;
+    }
+
+    const name = document.getElementById('student-name').value.trim();
+    const email = document.getElementById('student-email').value.trim();
+
+    clearResult();
+    button.disabled = true;
+    button.textContent = 'Uploading…';
+
+    try {
+      const fileBase64 = await readFileBase64(file);
+      const response = await fetch('/api/upload-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           company,
-          name: document.getElementById('student-name').value.trim(),
-          email: document.getElementById('student-email').value.trim(),
-          filename: selectedFile.name,
-          file: selectedFile,
-          createdAt: new Date().toISOString()
-        });
-        renderBox('Demo résumé saved on this device.', [
-          `${selectedFile.name} → ${company}`,
-          'Saved in this browser (IndexedDB). NOT uploaded to Supabase or delivered to a recruiter.'
-        ]);
-      } catch (error) {
-        renderBox('Could not save the résumé.', [
-          error.message || 'Browser storage unavailable or full.'
-        ]);
-      } finally {
-        button.disabled = false;
-        button.textContent = 'Save Demo Submission →';
+          name,
+          email,
+          filename: file.name,
+          fileBase64
+        })
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || data?.ok !== true) {
+        throw new Error(data?.error || 'The server did not confirm the upload.');
       }
-    } else if (page === 'analyze' && typeof window.renderKeywordMatch === 'function') {
-      window.renderKeywordMatch();
+
+      renderBox('Résumé uploaded successfully.', [
+        `${file.name} → ${companyLabel}`
+      ]);
+    } catch (error) {
+      renderBox('Could not upload the résumé.', [error.message]);
+    } finally {
+      button.disabled = false;
+      button.textContent = originalLabel;
     }
   });
 
   form.addEventListener('input', event => {
-    if (event.target === fileInput) return;
-    result.replaceChildren();
-    result.className = '';
+    if (event.target !== fileInput) clearResult();
   });
 }
