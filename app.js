@@ -39,6 +39,74 @@ function renderBox(title, lines) {
   result.focus({ preventScroll: true });
 }
 
+function addEl(parent, tag, text, className) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  element.textContent = text;
+  parent.append(element);
+  return element;
+}
+
+function addChips(parent, values, emptyText) {
+  if (!values.length) { addEl(parent, 'p', emptyText); return; }
+  const wrap = document.createElement('div');
+  wrap.className = 'skill-tags';
+  for (const skill of values) addEl(wrap, 'span', skill, 'skill-chip');
+  parent.append(wrap);
+}
+
+// Shows the `analysis` object from /api/upload-resume below the upload confirmation.
+function renderAnalysis(analysis) {
+  if (!analysis) return;
+  const box = document.createElement('div');
+  box.style.marginTop = '18px';
+  box.style.paddingTop = '16px';
+  box.style.borderTop = '1px solid #d5e5d7';
+  box.setAttribute('aria-live', 'polite');
+  addEl(box, 'strong', 'Résumé analysis');
+
+  if (analysis.status !== 'ok') {
+    addEl(box, 'p', analysis.message || 'Your file was saved, but the analysis is not available right now.');
+    result.append(box);
+    return;
+  }
+
+  addEl(box, 'span', 'KEYWORD MATCH · NOT AI', 'tag');
+  addEl(box, 'p', analysis.company.name);
+  const score = addEl(box, 'div', `${analysis.score}%`, 'score');
+  score.setAttribute('aria-label', `Match score: ${analysis.score} percent`);
+  addEl(box, 'strong', 'Skill match rate');
+
+  const progress = document.createElement('div');
+  progress.className = 'progress';
+  progress.setAttribute('role', 'progressbar');
+  progress.setAttribute('aria-valuemin', '0');
+  progress.setAttribute('aria-valuemax', '100');
+  progress.setAttribute('aria-valuenow', String(analysis.score));
+  const fill = document.createElement('span');
+  fill.style.width = `${analysis.score}%`;
+  progress.append(fill);
+  box.append(progress);
+
+  addEl(box, 'p', `Required: ${analysis.matchedRequired.length}/${analysis.requiredTotal} · Preferred: ${analysis.matchedPreferred.length}/${analysis.preferredTotal}`);
+
+  addEl(box, 'strong', 'Matched required skills');
+  addChips(box, analysis.matchedRequired, 'None found');
+  addEl(box, 'strong', 'Required skills: Not found in the resume');
+  addChips(box, analysis.missingRequired, 'None, every required skill was found');
+  addEl(box, 'strong', 'Matched preferred skills');
+  addChips(box, analysis.matchedPreferred, 'None found');
+  if (analysis.missingPreferred.length) {
+    addEl(box, 'strong', 'Preferred skills: Not found in the resume');
+    addChips(box, analysis.missingPreferred, '');
+  }
+
+  addEl(box, 'strong', 'Feedback');
+  for (const line of analysis.feedback || []) addEl(box, 'p', line);
+  addEl(box, 'p', 'Score = 75% required skill coverage + 25% preferred skill coverage. Matching is keyword-based on the text extracted from your PDF.', 'small');
+  result.append(box);
+}
+
 function chooseFile(file) {
   selectedFile = null;
   clearResult();
@@ -195,6 +263,7 @@ if (form) {
       renderBox('Résumé uploaded successfully.', [
         `${file.name} → ${companyLabel}`
       ]);
+      renderAnalysis(data.analysis);
     } catch (error) {
       renderBox('Could not upload the résumé.', [error.message]);
     } finally {
