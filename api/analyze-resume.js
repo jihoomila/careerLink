@@ -164,9 +164,11 @@ async function supabaseGet(path) {
     err.status = 500;
     throw err;
   }
-  const res = await fetch(`${base.replace(/\/$/, "")}/rest/v1/${path}`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
-  });
+  // Legacy service_role keys are JWTs (start with "eyJ") and go in Authorization too.
+  // New sb_secret_ keys are not JWTs, so they are sent in the apikey header only.
+  const headers = { apikey: key, Accept: "application/json" };
+  if (key.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`;
+  const res = await fetch(`${base.replace(/\/$/, "")}/rest/v1/${path}`, { headers });
   if (!res.ok) {
     const err = new Error(`Supabase request failed (${res.status}).`);
     err.status = 502;
