@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CareerLink career fair station: join a queue, prepare your résumé and preview role alignment.">
+  <title>Analyze Résumé | CareerLink</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/app.js" defer></script>
+  <script src="js/match.js" defer></script>
+</head>
+<body data-page="analyze">
+<header>
+<div class="brand">
+<div class="logo">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+<path d="M6 18 18 6M6 6h12v12"/>
+</svg>
+</div>CareerLink<span> / station</span>
+</div>
+<div class="event">
+<span>THE CAREER FAIR EXPERIENCE</span>
+<span class="live">Station ready</span>
+</div>
+</header>
+<main>
+<a class="back" href="index.html">← Back to station</a>
+<nav class="nav" aria-label="Station services">
+<a class="" href="queue.html">Join the Queue</a>
+<a class="" href="upload.html">Upload Résumé</a>
+<a class="active" href="analyze.html">Analyze Résumé</a>
+</nav>
+<div class="pagehead">
+<div class="eyebrow">03 / Discover</div>
+<h1>Analyze Résumé</h1>
+<p>Understand your strengths. See your next step.</p>
+</div>
+<div class="layout">
+<form class="panel" id="form">
+<h2>Find your fit.</h2>
+<label for="company">Target company</label>
+<select id="company" required>
+<option value="">Select a company</option>
+<option>Microsoft</option>
+<option>Salesforce</option>
+<option>Deloitte</option>
+</select>
+<label for="role">Target role</label>
+<select id="role">
+<option>Technology Intern</option>
+<option>Business Analyst Intern</option>
+<option>Software Engineering Intern</option>
+</select>
+<label for="skills">Your skills <span class="small">(separate with commas)</span></label>
+<textarea id="skills" rows="4" required placeholder="Python, SQL, AWS">Python, SQL, AWS</textarea>
+<p class="small">Enter skill keywords from your résumé. This prototype does not read PDF files.</p>
+<button class="primary" type="submit">Analyze Skill Match →</button>
+<p class="small">Keyword-based demo, not AI. Company skill requirements are sample data and not official employer criteria.</p>
+<div id="result" aria-live="polite"></div>
+</form>
+<aside class="panel">
+<h2>A clearer picture of your fit.</h2>
+<p>Compare your entered skills with example role requirements to see matches, missing skills, and practical suggestions.</p>
+<div class="stat">
+<span>✧</span>
+<strong>Role alignment</strong>
+</div>
+<div class="stat">
+<span>✓</span>
+<strong>Relevant strengths</strong>
+</div>
+<div class="stat">
+<span>
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+<path d="M6 18 18 6M6 6h12v12"/>
+</svg>
+</span>
+<strong>Practical next steps</strong>
+</div>
+<div class="hint utility-1">This prototype uses example role requirements, not official employer job descriptions. Results are not hiring predictions.</div>
+</aside>
+</div>
+<footer>
+<span>CAREERLINK &nbsp; / &nbsp; BUILT FOR WHAT’S NEXT</span>
+<span>Interactive keyword matching · No backend connected</span>
+</footer>
+</main>
+</body>
+</html>

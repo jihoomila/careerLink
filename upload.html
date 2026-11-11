@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CareerLink career fair station: join a queue, prepare your résumé and preview role alignment.">
+  <title>Upload Résumé | CareerLink</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/app.js" defer>
+</script>
+</head>
+<body data-page="upload">
+<header>
+<div class="brand">
+<div class="logo">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+<path d="M6 18 18 6M6 6h12v12"/>
+</svg>
+</div>CareerLink<span> / station</span>
+</div>
+<div class="event">
+<span>THE CAREER FAIR EXPERIENCE</span>
+<span class="live">Station ready</span>
+</div>
+</header>
+<main>
+<a class="back" href="index.html">← Back to station</a>
+<nav class="nav" aria-label="Station services">
+<a class="" href="queue.html">Join the Queue</a>
+<a class="active" href="upload.html">Upload Résumé</a>
+<a class="" href="analyze.html">Analyze Résumé</a>
+</nav>
+<div class="pagehead">
+<div class="eyebrow">02 / Share</div>
+<h1>Upload Résumé</h1>
+<p>Let your experience make the first impression.</p>
+</div>
+<div class="layout">
+<form class="panel" id="form">
+<h2>Your résumé, ready to share.</h2>
+<label for="company">Send to</label>
+<select id="company" required>
+<option value="">Select a company</option>
+<option>Microsoft</option>
+<option>Salesforce</option>
+<option>Deloitte</option>
+</select>
+<label for="student-name">Full name</label>
+<input id="student-name" autocomplete="name" required placeholder="e.g. Alex Morgan">
+<label for="student-email">Email address</label>
+<input id="student-email" type="email" autocomplete="email" required placeholder="you@university.edu">
+<label class="drop" id="drop" for="file">
+<span class="icon">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+<path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/>
+</svg>
+</span>
+<strong id="filename">Choose your résumé</strong>
+<p>Drag and drop, or browse files</p>
+<p>PDF or DOCX · Maximum 10 MB</p>
+<input id="file" type="file" accept=".pdf,.docx">
+</label>
+<div id="fileerror" class="error" role="alert">
+</div>
+<button class="primary">Save Demo Submission →</button>
+<p class="small">The selected file is saved in this browser’s local IndexedDB storage, not uploaded to Supabase or sent to a company. Avoid using real sensitive résumés on shared kiosks.</p>
+<div id="result" aria-live="polite">
+</div>
+</form>
+<aside class="panel">
+<h2>Make a strong first impression.</h2>
+<div class="stat">
+<span>01</span>
+<strong>Choose your company</strong>
+</div>
+<div class="stat">
+<span>02</span>
+<strong>Add your latest résumé</strong>
+</div>
+<div class="stat">
+<span>03</span>
+<strong>Review before sharing</strong>
+</div>
+<p>Demo submissions remain on this device. Clear browser site data to remove them.</p>
+<div class="hint">Tip: A PDF preserves your formatting across devices.</div>
+</aside>
+</div>
+<footer>
+<span>CAREERLINK &nbsp; / &nbsp; BUILT FOR WHAT’S NEXT</span>
+<span>Local file storage prototype · No company delivery</span>
+</footer>
+</main>
+</body>
+</html>
