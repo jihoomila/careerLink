@@ -1,49 +1,10 @@
-/* Keyword matching demo, adapted from the supplied prototype and Supabase formula.
-   No Supabase connection, API call, PDF reading, or AI generation. */
+/* Analyze page: sends the selected company ID and typed skills to /api/analyze-resume
+   and renders the score, matched/missing skills and feedback.
+   js/app.js calls window.renderKeywordMatch() when the form is submitted. */
 'use strict';
 
-// DEMO ONLY: these are illustrative requirements, NOT official employer criteria.
-const demoRoles = {
-  'Technology Intern': {
-    req: ['Troubleshooting', 'Networking', 'Windows', 'Customer Service'],
-    pref: ['Linux', 'Active Directory']
-  },
-  'Business Analyst Intern': {
-    req: ['Excel', 'SQL', 'Communication', 'Data Analysis'],
-    pref: ['Tableau', 'Statistics']
-  },
-  'Software Engineering Intern': {
-    req: ['Python', 'SQL', 'JavaScript', 'React'],
-    pref: ['AWS', 'Docker']
-  }
-};
+const ANALYZE_API = '/api/analyze-resume';
 
-function normalizeSkill(skill) {
-  return skill.trim().toLowerCase();
-}
-function calculateKeywordMatch(skills, role) {
-  const known = new Set(skills.map(normalizeSkill).filter(Boolean));
-  const matchedReq = role.req.filter(skill => known.has(normalizeSkill(skill)));
-  const matchedPref = role.pref.filter(skill => known.has(normalizeSkill(skill)));
-  const missingReq = role.req.filter(skill => !known.has(normalizeSkill(skill)));
-  const missingPref = role.pref.filter(skill => !known.has(normalizeSkill(skill)));
-  // Exact formula from team's Supabase Edge Function.
-  const score = Math.round(100 * (
-    .75 * (role.req.length ? matchedReq.length / role.req.length : 1) +
-    .25 * (role.pref.length ? matchedPref.length / role.pref.length : 1)
-  ));
-  return { score, matchedReq, matchedPref, missingReq, missingPref };
-}
-function generateFeedback(r, role) {
-  const parts = [
-    `You match ${r.matchedReq.length} of ${role.req.length} required skills and ${r.matchedPref.length} of ${role.pref.length} preferred skills.`
-  ];
-  if (r.matchedReq.length) parts.push(`Highlight your experience with ${r.matchedReq.join(', ')} in your résumé.`);
-  if (r.missingReq.length) parts.push(`Prioritize developing or demonstrating these required skills: ${r.missingReq.join(', ')}.`);
-  else parts.push('You match every listed required skill keyword.');
-  if (r.missingPref.length) parts.push(`Additional experience with ${r.missingPref.join(', ')} may strengthen your profile.`);
-  return parts.join(' ');
-}
 function addText(parent, tag, content, className) {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -51,46 +12,117 @@ function addText(parent, tag, content, className) {
   parent.append(element);
   return element;
 }
-function addSkillTags(parent, values) {
-  if (!values.length) { addText(parent, 'p', 'None'); return; }
+
+function addSkillTags(parent, values, emptyText) {
+  if (!values.length) { addText(parent, 'p', emptyText || 'None'); return; }
   const wrapper = document.createElement('div');
   wrapper.className = 'skill-tags';
   for (const skill of values) addText(wrapper, 'span', skill, 'skill-chip');
   parent.append(wrapper);
 }
-window.renderKeywordMatch = function renderKeywordMatch() {
-  const company = document.getElementById('company').value;
-  const roleName = document.getElementById('role').value;
-  const skills = document.getElementById('skills').value.split(',');
-  const role = demoRoles[roleName];
-  const r = calculateKeywordMatch(skills, role);
+
+function showAnalyzeError(message) {
+  const result = document.getElementById('result');
+  result.replaceChildren();
+  result.className = '';
+  addText(result, 'p', message, 'error').setAttribute('role', 'alert');
+}
+
+function showAnalyzeResult(d) {
   const result = document.getElementById('result');
   result.replaceChildren();
   result.className = 'result';
-  addText(result, 'span', 'KEYWORD MATCH · DEMO DATA · NOT AI', 'tag');
-  addText(result, 'p', `${company} · ${roleName}`);
-  const score = addText(result, 'div', `${r.score}%`, 'score');
-  score.setAttribute('aria-label', `Match score: ${r.score} percent`);
+
+  addText(result, 'span', 'KEYWORD MATCH · NOT AI', 'tag');
+  addText(result, 'p', d.company.name);
+
+  const score = addText(result, 'div', `${d.score}%`, 'score');
+  score.setAttribute('aria-label', `Match score: ${d.score} percent`);
   addText(result, 'strong', 'Skill match rate');
+
   const progress = document.createElement('div');
   progress.className = 'progress';
   progress.setAttribute('role', 'progressbar');
   progress.setAttribute('aria-valuemin', '0');
   progress.setAttribute('aria-valuemax', '100');
-  progress.setAttribute('aria-valuenow', String(r.score));
+  progress.setAttribute('aria-valuenow', String(d.score));
   const fill = document.createElement('span');
-  fill.style.width = `${r.score}%`;
+  fill.style.width = `${d.score}%`;
   progress.append(fill);
   result.append(progress);
-  addText(result, 'p', `Required: ${r.matchedReq.length}/${role.req.length} · Preferred: ${r.matchedPref.length}/${role.pref.length}`);
-  addText(result, 'strong', 'Matching skills');
-  addSkillTags(result, [...r.matchedReq, ...r.matchedPref]);
-  addText(result, 'strong', 'Missing skills');
-  addSkillTags(result, [...r.missingReq, ...r.missingPref]);
+
+  addText(result, 'p', `Required: ${d.matchedRequired.length}/${d.requiredTotal} · Preferred: ${d.matchedPreferred.length}/${d.preferredTotal}`);
+
+  addText(result, 'strong', 'Matched required skills');
+  addSkillTags(result, d.matchedRequired, 'None yet');
+  addText(result, 'strong', 'Missing required skills');
+  addSkillTags(result, d.missingRequired, 'None, you cover every required skill');
+  addText(result, 'strong', 'Preferred skills');
+  addSkillTags(result, d.matchedPreferred, 'No preferred skills matched yet');
+  if (d.missingPreferred.length) {
+    addText(result, 'strong', 'Missing preferred skills');
+    addSkillTags(result, d.missingPreferred);
+  }
+
   addText(result, 'strong', 'Feedback');
-  addText(result, 'p', generateFeedback(r, role));
-  addText(result, 'p', 'Score = 75% required skill coverage + 25% preferred skill coverage. Exact keyword matching (case-insensitive). No file was analyzed, no data was saved.', 'small');
+  for (const line of d.feedback) addText(result, 'p', line);
+
+  addText(result, 'p', 'Score = 75% required skill coverage + 25% preferred skill coverage. Matching is keyword-based. No file was analyzed and nothing was saved.', 'small');
   result.setAttribute('tabindex', '-1');
-  result.focus({preventScroll: true});
-  result.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  result.focus({ preventScroll: true });
+  result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function loadCompanies() {
+  const select = document.getElementById('company');
+  try {
+    const res = await fetch(ANALYZE_API);
+    if (!res.ok) throw new Error();
+    const rows = await res.json();
+    select.replaceChildren();
+    const first = document.createElement('option');
+    first.value = '';
+    first.textContent = 'Select a company';
+    select.append(first);
+    for (const c of rows) {
+      const opt = document.createElement('option');
+      opt.value = String(c.id);
+      opt.textContent = c.name;
+      select.append(opt);
+    }
+  } catch {
+    select.replaceChildren();
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Could not load companies';
+    select.append(opt);
+    showAnalyzeError('Could not load companies. Check that the API is running and the Supabase environment variables are set.');
+  }
+}
+
+window.renderKeywordMatch = async function renderKeywordMatch() {
+  const companyId = document.getElementById('company').value;
+  const skills = document.getElementById('skills').value;
+  const button = document.querySelector('#form button.primary');
+  const result = document.getElementById('result');
+
+  result.className = '';
+  result.textContent = 'Analyzing…';
+  if (button) button.disabled = true;
+  try {
+    const res = await fetch(ANALYZE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ companyId, skills })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Analysis failed.');
+    showAnalyzeResult(data);
+  } catch (err) {
+    showAnalyzeError(err.message || 'Analysis failed.');
+  } finally {
+    if (button) button.disabled = false;
+  }
 };
+
+loadCompanies();
