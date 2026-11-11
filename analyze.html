@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="CareerLink career fair station: join a queue, prepare your résumé and preview role alignment.">
   <title>Analyze Résumé | CareerLink</title>
-<link rel="stylesheet" href="styles.css">
-<script src="app.js" defer></script>
-<script src="match.js" defer></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/app.js" defer></script>
+  <script src="js/match.js" defer></script>
 </head>
 <body data-page="analyze">
 <header>
@@ -40,27 +40,18 @@
 <h2>Find your fit.</h2>
 <label for="company">Target company</label>
 <select id="company" required>
-<option value="">Select a company</option>
-<option>Microsoft</option>
-<option>Salesforce</option>
-<option>Deloitte</option>
-</select>
-<label for="role">Target role</label>
-<select id="role">
-<option>Technology Intern</option>
-<option>Business Analyst Intern</option>
-<option>Software Engineering Intern</option>
+<option value="">Loading companies…</option>
 </select>
 <label for="skills">Your skills <span class="small">(separate with commas)</span></label>
-<textarea id="skills" rows="4" required placeholder="Python, SQL, AWS">Python, SQL, AWS</textarea>
-<p class="small">Enter skill keywords from your résumé. This prototype does not read PDF files.</p>
+<textarea id="skills" rows="4" required placeholder="Python, SQL, Git">Python, SQL, Git</textarea>
+<p class="small">Enter skill keywords from your résumé. This version does not read PDF files.</p>
 <button class="primary" type="submit">Analyze Skill Match →</button>
-<p class="small">Keyword-based demo, not AI. Company skill requirements are sample data and not official employer criteria.</p>
+<p class="small">Keyword-based match, not AI. Score = 75% required skills + 25% preferred skills, using the company's skill list.</p>
 <div id="result" aria-live="polite"></div>
 </form>
 <aside class="panel">
 <h2>A clearer picture of your fit.</h2>
-<p>Compare your entered skills with example role requirements to see matches, missing skills, and practical suggestions.</p>
+<p>Compare your entered skills with a company's requirements to see matches, missing skills, and practical suggestions.</p>
 <div class="stat">
 <span>✧</span>
 <strong>Role alignment</strong>
@@ -77,13 +68,14 @@
 </span>
 <strong>Practical next steps</strong>
 </div>
-<div class="hint utility-1">This prototype uses example role requirements, not official employer job descriptions. Results are not hiring predictions.</div>
+<div class="hint utility-1">Results compare your skills to the company's listed skills. They are not hiring predictions.</div>
 </aside>
 </div>
 <footer>
 <span>CAREERLINK &nbsp; / &nbsp; BUILT FOR WHAT’S NEXT</span>
-<span>Interactive keyword matching · No backend connected</span>
+<span>Keyword matching · Powered by company skill data</span>
 </footer>
 </main>
+
 </body>
 </html>
