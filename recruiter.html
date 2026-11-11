@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CareerLink – Recruiter</title>
+  <!-- Add your site's stylesheet here, e.g. <link rel="stylesheet" href="style.css"> -->
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 420px; margin: 3rem auto; padding: 0 1rem; }
+    input, button { font: inherit; padding: .6rem .8rem; margin: .25rem 0; }
+    button { cursor: pointer; }
+    #callNext { width: 100%; font-size: 1.25rem; padding: 1rem; }
+    .ticket { font-size: 2.5rem; font-weight: 700; }
+    .warn { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Recruiter</h1>
+
+  <section id="login">
+    <label for="code">Access code</label><br>
+    <input id="code" type="password" autocomplete="off">
+    <button id="unlock">Unlock</button>
+  </section>
+
+  <section id="panel" hidden>
+    <h2 id="company"></h2>
+    <p id="booth"></p>
+    <p>Last called ticket</p>
+    <p class="ticket" id="last">—</p>
+    <button id="callNext">Call Next</button>
+    <p id="msg" aria-live="polite"></p>
+    <button id="resend" hidden>Resend email</button>
+  </section>
+
+  <script>
+    let code = '';
+    const $ = (id) => document.getElementById(id);
+
+    async function api(action) {
+      const r = await fetch('/api/call-next', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, action }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Request failed');
+      return d;
+    }
+
+    function render(d) {
+      $('company').textContent = d.company;
+      $('booth').textContent = d.booth;
+      $('last').textContent = d.last ? '#' + d.last.ticket : '—';
+      $('resend').hidden = !(d.last && d.last.emailStatus === 'failed');
+    }
+
+    function show(text, warn) {
+      $('msg').textContent = text;
+      $('msg').className = warn ? 'warn' : '';
+    }
+
+    $('unlock').onclick = async () => {
+      code = $('code').value.trim();
+      try {
+        render(await api('status'));
+        $('login').hidden = true;
+        $('panel').hidden = false;
+      } catch (e) { alert(e.message); }
+    };
+
+    $('callNext').onclick = async () => {
+      $('callNext').disabled = true;
+      try {
+        const d = await api('call');
+        render(d);
+        if (d.empty) show('No one is waiting.');
+        else if (d.last.emailStatus === 'sent') show(`Ticket #${d.called} called. Email sent.`);
+        else show(`Ticket #${d.called} called, but the email failed. Use "Resend email" or call the student out loud.`, true);
+      } catch (e) { show(e.message, true); }
+      $('callNext').disabled = false;
+    };
+
+    $('resend').onclick = async () => {
+      $('resend').disabled = true;
+      try {
+        const d = await api('resend');
+        render(d);
+        show(d.last.emailStatus === 'sent' ? `Email sent for ticket #${d.last.ticket}.` : 'Email failed again.', d.last.emailStatus !== 'sent');
+      } catch (e) { show(e.message, true); }
+      $('resend').disabled = false;
+    };
+  </script>
+</body>
+</html>
