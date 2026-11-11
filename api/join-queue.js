@@ -23,7 +23,11 @@ export async function POST(request) {
         'Content-Type': 'application/json',
         Prefer: 'return=representation'
       },
-      body: JSON.stringify({ company_id: companyId, name })
+      body: JSON.stringify({
+  company_id: company,
+  name,
+  email: document.getElementById('email').value.trim()
+})
     });
 
     if (!response.ok) {
