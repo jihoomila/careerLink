@@ -3,6 +3,7 @@
 //   SUPABASE_URL          e.g. https://nqvcesxuydrapctckhca.supabase.co
 //   SUPABASE_SERVICE_KEY  your Supabase SECRET key (sb_secret_...)
 const { randomUUID } = require("crypto");
+const { analyzeUploadedResume } = require("../lib/analyze-upload");
 
 const COMPANIES = ["robo", "soft"];
 const MAX_BYTES = 3 * 1024 * 1024; // Vercel functions accept ~4.5 MB bodies; base64 adds ~33%
@@ -59,7 +60,9 @@ module.exports = async (req, res) => {
       await fetch(`${URL}/storage/v1/object/resumes/${path}`, { method: "DELETE", headers: auth }); // no orphan files
       return res.status(502).json({ error: "Could not save the submission" });
     }
-    return res.status(200).json({ ok: true, id });
+    // ---- 3. analyze the PDF text against the company's skills (never throws; the upload is already saved) ----
+    const analysis = await analyzeUploadedResume({ buffer: buf, companyId: company });
+    return res.status(200).json({ ok: true, id, analysis });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: "Unexpected server error" });
