@@ -61,6 +61,18 @@
         >
 
         <button class="primary" type="submit">Get Queue Number →</button>
+        <label for="email">Email address</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          placeholder="e.g. alex@university.edu"
+          maxlength="254"
+          aria-describedby="email-help"
+          required
+        >
+        <p class="small" id="email-help">We'll email you when it's your turn.</p>
         <div id="result" aria-live="polite"></div>
       </form>
 
