@@ -35,24 +35,14 @@
 <h1>Analyze Résumé</h1>
 <p>Understand your strengths. See your next step.</p>
 </div>
-<div class="panel" id="uploaded" aria-live="polite" hidden style="margin-bottom:24px"></div>
 <div class="layout">
-<form class="panel" id="form">
-<h2>Find your fit.</h2>
-<label for="company">Target company</label>
-<select id="company" required>
-<option value="">Loading companies…</option>
-</select>
-<label for="skills">Your skills <span class="small">(separate with commas)</span></label>
-<textarea id="skills" rows="4" required placeholder="Python, SQL, Git">Python, SQL, Git</textarea>
-<p class="small">Enter skill keywords from your résumé. This version does not read PDF files.</p>
-<button class="primary" type="submit">Analyze Skill Match →</button>
-<p class="small">Keyword-based match, not AI. Score = 75% required skills + 25% preferred skills, using the company's skill list.</p>
-<div id="result" aria-live="polite"></div>
-</form>
+<section class="panel">
+<h2>Your résumé match.</h2>
+<div id="scores" aria-live="polite"></div>
+</section>
 <aside class="panel">
 <h2>A clearer picture of your fit.</h2>
-<p>Compare your entered skills with a company's requirements to see your match percentage.</p>
+<p>Your match percentage comes from the PDF résumé you uploaded, compared with the company's listed skills.</p>
 <div class="stat">
 <span>✧</span>
 <strong>Role alignment</strong>
@@ -67,16 +57,4 @@
 <path d="M6 18 18 6M6 6h12v12"/>
 </svg>
 </span>
-<strong>Practical next steps</strong>
-</div>
-<div class="hint utility-1">Results compare your skills to the company's listed skills. They are not hiring predictions.</div>
-</aside>
-</div>
-<footer>
-<span>CAREERLINK &nbsp; / &nbsp; BUILT FOR WHAT’S NEXT</span>
-<span>Keyword matching · Powered by company skill data</span>
-</footer>
-</main>
-
-</body>
-</html>
+<strong>Practical
