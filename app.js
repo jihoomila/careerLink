@@ -47,86 +47,50 @@ function addEl(parent, tag, text, className) {
   return element;
 }
 
-function addChips(parent, values, emptyText) {
-  if (!values.length) {
-    addEl(parent, 'p', emptyText);
-    return;
-  }
-
-  const wrap = document.createElement('div');
-  wrap.className = 'skill-tags';
-  for (const skill of values) addEl(wrap, 'span', skill, 'skill-chip');
-  parent.append(wrap);
-}
-
-// Shows the analysis from /api/upload-resume below the upload confirmation.
+// Shows the match percentage from /api/upload-resume below the upload confirmation.
 function renderAnalysis(analysis) {
   if (!analysis) return;
-
   const box = document.createElement('div');
   box.style.marginTop = '18px';
   box.style.paddingTop = '16px';
   box.style.borderTop = '1px solid #d5e5d7';
   box.setAttribute('aria-live', 'polite');
-  addEl(box, 'strong', 'Resume analysis');
 
   if (analysis.status !== 'ok') {
-    addEl(
-      box,
-      'p',
-      analysis.message || 'Your file was saved, but the analysis is not available right now.'
-    );
+    addEl(box, 'strong', 'Résumé analysis');
+    addEl(box, 'p', analysis.message || 'Your file was saved, but the analysis is not available right now.');
     result.append(box);
     return;
   }
 
-  addEl(box, 'span', 'KEYWORD MATCH · NOT AI', 'tag');
+  addEl(box, 'strong', 'Résumé match');
   addEl(box, 'p', analysis.company.name);
   const score = addEl(box, 'div', `${analysis.score}%`, 'score');
   score.setAttribute('aria-label', `Match score: ${analysis.score} percent`);
   addEl(box, 'strong', 'Skill match rate');
-
-  const progress = document.createElement('div');
-  progress.className = 'progress';
-  progress.setAttribute('role', 'progressbar');
-  progress.setAttribute('aria-valuemin', '0');
-  progress.setAttribute('aria-valuemax', '100');
-  progress.setAttribute('aria-valuenow', String(analysis.score));
-
-  const fill = document.createElement('span');
-  fill.style.width = `${analysis.score}%`;
-  progress.append(fill);
-  box.append(progress);
-
-  addEl(
-    box,
-    'p',
-    `Required: ${analysis.matchedRequired.length}/${analysis.requiredTotal} · Preferred: ${analysis.matchedPreferred.length}/${analysis.preferredTotal}`
-  );
-
-  addEl(box, 'strong', 'Matched required skills');
-  addChips(box, analysis.matchedRequired, 'None found');
-  addEl(box, 'strong', 'Required skills: Not found in the resume');
-  addChips(box, analysis.missingRequired, 'None, every required skill was found');
-  addEl(box, 'strong', 'Matched preferred skills');
-  addChips(box, analysis.matchedPreferred, 'None found');
-
-  if (analysis.missingPreferred.length) {
-    addEl(box, 'strong', 'Preferred skills: Not found in the resume');
-    addChips(box, analysis.missingPreferred, '');
-  }
-
-  addEl(box, 'strong', 'Feedback');
-  for (const line of analysis.feedback || []) addEl(box, 'p', line);
-
-  addEl(
-    box,
-    'p',
-    'Score = 75% required skill coverage + 25% preferred skill coverage. Matching is keyword-based on the text extracted from your PDF.',
-    'small'
-  );
-
+  addEl(box, 'p', 'Score = 75% required skill coverage + 25% preferred skill coverage. Matching is keyword-based on the text extracted from your PDF.', 'small');
   result.append(box);
+}
+
+const SCORE_STORE_KEY = 'careerlink-uploaded-scores-v1';
+
+// Remembers the latest analysis score per company in this browser so the Analyze page can show it.
+function saveUploadedScore(companyId, filename, analysis) {
+  if (!analysis || analysis.status !== 'ok') return;
+  try {
+    const raw = JSON.parse(localStorage.getItem(SCORE_STORE_KEY) || 'null');
+    const store = raw && raw.items ? raw : { last: null, items: {} };
+    store.items[companyId] = {
+      companyName: analysis.company.name,
+      score: analysis.score,
+      filename,
+      savedAt: new Date().toISOString()
+    };
+    store.last = companyId;
+    localStorage.setItem(SCORE_STORE_KEY, JSON.stringify(store));
+  } catch {
+    // Storage unavailable (private mode or full): the upload still succeeded.
+  }
 }
 
 function chooseFile(file) {
@@ -142,7 +106,7 @@ function chooseFile(file) {
     fileError.textContent = file
       ? `Choose a non-empty ${types} file up to ${maxFileSizeMB} MB.`
       : '';
-    filename.textContent = 'Choose your resume';
+    filename.textContent = 'Choose your résumé';
     fileInput.value = '';
     return;
   }
@@ -213,7 +177,6 @@ if (form) {
 
     if (page === 'queue') {
       const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
 
       if (!name) {
         renderBox('Enter your name.', []);
@@ -227,11 +190,7 @@ if (form) {
         const response = await fetch('/api/join-queue', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            company_id: company,
-            name,
-            email
-          })
+          body: JSON.stringify({ company_id: company, name })
         });
         const data = await response.json().catch(() => null);
 
@@ -257,7 +216,7 @@ if (form) {
 
     const file = selectedFile;
     if (!file) {
-      fileError.textContent = 'Choose a PDF resume first.';
+      fileError.textContent = 'Choose a PDF résumé first.';
       return;
     }
 
@@ -287,12 +246,13 @@ if (form) {
         throw new Error(data?.error || 'The server did not confirm the upload.');
       }
 
-      renderBox('Resume uploaded successfully.', [
+      renderBox('Résumé uploaded successfully.', [
         `${file.name} → ${companyLabel}`
       ]);
       renderAnalysis(data.analysis);
+      saveUploadedScore(company, file.name, data.analysis);
     } catch (error) {
-      renderBox('Could not upload the resume.', [error.message]);
+      renderBox('Could not upload the résumé.', [error.message]);
     } finally {
       button.disabled = false;
       button.textContent = originalLabel;
