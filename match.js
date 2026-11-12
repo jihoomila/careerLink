@@ -44,6 +44,42 @@ function showAnalyzeResult(d) {
   result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// Shows the score from the résumé the student already uploaded (saved in this browser by app.js).
+function showUploadedScore() {
+  const box = document.getElementById('uploaded');
+  if (!box) return;
+  const select = document.getElementById('company');
+
+  let store = { last: null, items: {} };
+  try {
+    const raw = JSON.parse(localStorage.getItem('careerlink-uploaded-scores-v1') || 'null');
+    if (raw && raw.items) store = raw;
+  } catch {
+    // ignore unreadable storage
+  }
+
+  const id = select.value || store.last;
+  const item = id ? store.items[id] : null;
+  box.replaceChildren();
+
+  if (item) {
+    addText(box, 'strong', 'Your uploaded résumé');
+    addText(box, 'p', `${item.companyName} · ${item.filename}`);
+    const score = addText(box, 'div', `${item.score}%`, 'score');
+    score.setAttribute('aria-label', `Uploaded résumé match score: ${item.score} percent`);
+    addText(box, 'strong', 'Skill match rate');
+    addText(box, 'p', `Scored on ${new Date(item.savedAt).toLocaleDateString()} from the PDF you uploaded in this browser. Score = 75% required + 25% preferred skills.`, 'small');
+    box.hidden = false;
+  } else if (select.value) {
+    const label = select.selectedOptions[0] ? select.selectedOptions[0].textContent : 'this company';
+    addText(box, 'strong', 'No uploaded résumé yet');
+    addText(box, 'p', `Upload a PDF résumé for ${label} on the Upload Résumé page to see its match score here.`, 'small');
+    box.hidden = false;
+  } else {
+    box.hidden = true;
+  }
+}
+
 async function loadCompanies() {
   const select = document.getElementById('company');
   try {
@@ -97,3 +133,5 @@ window.renderKeywordMatch = async function renderKeywordMatch() {
 };
 
 loadCompanies();
+document.getElementById('company').addEventListener('change', showUploadedScore);
+showUploadedScore();
