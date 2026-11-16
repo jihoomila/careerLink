@@ -177,15 +177,11 @@ if (form) {
 
     if (page === 'queue') {
       const name = document.getElementById('name').value.trim();
-      const email = form.querySelector('input[type="email"]')?.value.trim();
+      const emailField = document.getElementById('email');
+      const email = emailField ? emailField.value.trim() : '';
 
       if (!name) {
         renderBox('Enter your name.', []);
-        return;
-      }
-
-      if (!email) {
-        renderBox('Enter your email address.', []);
         return;
       }
 
@@ -196,11 +192,7 @@ if (form) {
         const response = await fetch('/api/join-queue', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            company_id: company,
-            name,
-            email
-          })
+          body: JSON.stringify({ company_id: company, name, email })
         });
         const data = await response.json().catch(() => null);
 
