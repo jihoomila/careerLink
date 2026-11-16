@@ -16,20 +16,35 @@ function companyForCode(code) {
 }
 
 async function sendEmail(row, co) {
-  if (!row.email) throw new Error('No email on file');
+  // The call_next function may not return the email column, so look it up if it is missing.
+  let to = row.email;
+  if (!to && row.id) {
+    try {
+      const found = await sb(`/entries?id=eq.${row.id}&select=email`);
+      to = found[0] && found[0].email;
+    } catch (e) { console.error('email lookup failed:', e.message); }
+  }
+  if (!to) throw new Error('No email on file for this ticket');
+  if (!process.env.BREVO_API_KEY) throw new Error('BREVO_API_KEY is not set');
+  if (!process.env.EMAIL_FROM) throw new Error('EMAIL_FROM is not set');
+
   const text = `It's your turn at ${co.name}. Please head to ${co.booth}. Your ticket is #${row.ticket}.`;
   const r = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({
       sender: { name: 'CareerLink', email: process.env.EMAIL_FROM },
-      to: [{ email: row.email }],
+      to: [{ email: to }],
       subject: `It's your turn at ${co.name} (ticket #${row.ticket})`,
       textContent: text,
     }),
     signal: AbortSignal.timeout(8000),
   });
-  if (!r.ok) throw new Error(`Email provider returned ${r.status}`);
+  if (!r.ok) {
+    let detail = '';
+    try { detail = (await r.text()).slice(0, 200); } catch {}
+    throw new Error(`Email provider returned ${r.status}: ${detail}`);
+  }
 }
 
 // Sends exactly once per claim. Never retries automatically.
